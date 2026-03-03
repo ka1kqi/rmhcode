@@ -85,28 +85,64 @@ function patchFile(source, dest) {
     'Theme color attribute'
   );
 
-  // ── 3. Suppress header when RMHCODE=1 ─────────────────────────────────
+  // ── 3. Rebrand remaining "Claude Code" in UI ────────────────────────────
+
+  // Status bar bold header: {bold:!0},"Claude Code" → "rmhcode"
+  replaceAll(
+    '{bold:!0},"Claude Code"',
+    '{bold:!0},"rmhcode"',
+    'Status bar header rebrand'
+  );
+
+  // Product name variable: tL4="Claude Code" → "rmhcode"
+  replaceAll(
+    '="Claude Code"',
+    '="rmhcode"',
+    'Product name variable rebrand'
+  );
+
+  // Terminal title default: ??"Claude Code" → "rmhcode"
+  replaceAll(
+    '??"Claude Code"',
+    '??"rmhcode"',
+    'Terminal title rebrand'
+  );
+
+  // Onboarding text: "Claude Code" + "'ll be able to read..."
+  replaceAll(
+    '"Claude Code","\'","ll be able',
+    '"rmhcode","\'","ll be able',
+    'Onboarding text rebrand'
+  );
+
+  // Theme-styled header: ("Claude Code") in bA() calls
+  replaceAll(
+    '("Claude Code")',
+    '("rmhcode")',
+    'Theme-styled header rebrand'
+  );
+
+  // MCP server display name
+  replaceAll(
+    '"claude.ai":"Claude Code"',
+    '"claude.ai":"rmhcode"',
+    'MCP server name rebrand'
+  );
+
+  // ── 4. Suppress header when RMHCODE=1 ─────────────────────────────────
 
   // The header rendering function IR1() renders the welcome screen.
   // We patch it to return null when RMHCODE env is set.
-  // Pattern: "function IR1(){" (the header component)
   const headerFnPattern = /function IR1\(\)\{let A=w6\(/;
   const headerMatch = code.match(headerFnPattern);
   if (headerMatch) {
     const idx = code.indexOf(headerMatch[0]);
     const injection = `function IR1(){if(process.env.RMHCODE==="1")return null;let A=w6(`;
     code = code.slice(0, idx) + injection + code.slice(idx + headerMatch[0].length);
-    console.log('  ✓ Patched header function to suppress when RMHCODE=1');
+    console.log('  ✓ Patched IR1 (welcome screen) to suppress when RMHCODE=1');
     patchCount++;
   } else {
-    // Fallback: try to find any header function by the Welcome pattern
-    // The welcome text is in a function that starts with "function " and contains
-    // "Welcome to rmhcode" (already replaced above)
     console.log('  - Header function IR1 not found (trying alternative pattern)');
-
-    // Alternative: suppress at the component level
-    // The welcome element is created like: createElement(T,null,"Welcome to rmhcode")
-    // We can replace the welcome text with empty string when env is set
     const welcomeCheck = 'welcomeMessage:"Welcome to rmhcode"';
     if (code.includes(welcomeCheck)) {
       replaceAll(
@@ -115,6 +151,34 @@ function patchFile(source, dest) {
         'Suppress welcome via env check'
       );
     }
+  }
+
+  // The status bar function QOq() renders "Claude Code vX.X.X" + model info.
+  // We patch it to return null when RMHCODE=1 is set.
+  const statusBarPattern = /function QOq\(\)\{let A=w6\(/;
+  const statusMatch = code.match(statusBarPattern);
+  if (statusMatch) {
+    const idx = code.indexOf(statusMatch[0]);
+    const injection = `function QOq(){if(process.env.RMHCODE==="1")return null;let A=w6(`;
+    code = code.slice(0, idx) + injection + code.slice(idx + statusMatch[0].length);
+    console.log('  ✓ Patched QOq (status bar) to suppress when RMHCODE=1');
+    patchCount++;
+  } else {
+    console.log('  - Status bar function QOq not found (skipped)');
+  }
+
+  // The small Claude logo y9z() renders in the status bar.
+  // Suppress it when RMHCODE=1 is set.
+  const logoPattern = /function y9z\(\)\{let A=w6\(/;
+  const logoMatch = code.match(logoPattern);
+  if (logoMatch) {
+    const idx = code.indexOf(logoMatch[0]);
+    const injection = `function y9z(){if(process.env.RMHCODE==="1")return null;let A=w6(`;
+    code = code.slice(0, idx) + injection + code.slice(idx + logoMatch[0].length);
+    console.log('  ✓ Patched y9z (small Claude logo) to suppress when RMHCODE=1');
+    patchCount++;
+  } else {
+    console.log('  - Small logo function y9z not found (skipped)');
   }
 
   console.log(`\n  Total patches applied: ${patchCount}`);
