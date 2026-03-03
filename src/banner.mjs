@@ -154,6 +154,19 @@ function applyGradient(lines) {
 
 // ── Public API ──────────────────────────────────────────────────────────
 
+// Strip ANSI escape codes to get visible character count
+function visLen(str) {
+  return str.replace(/\x1b\[[0-9;]*m/g, '').length;
+}
+
+// Center a string (which may contain ANSI codes) within a visible width
+function center(str, width) {
+  const diff = width - visLen(str);
+  if (diff <= 0) return str;
+  const left = Math.floor(diff / 2);
+  return ' '.repeat(left) + str + ' '.repeat(diff - left);
+}
+
 export function renderBanner(version = '1.0.0') {
   const cols = process.stdout.columns || 80;
 
@@ -175,19 +188,50 @@ export function renderBanner(version = '1.0.0') {
 
   const coloredLines = applyGradient(art);
 
-  const parts = [
-    '',
-    ...coloredLines,
-  ];
+  // Build the content lines (art + version + tagline)
+  const contentLines = [...coloredLines];
 
-  // Version + subtitle line
+  // Version line
   const [vr, vg, vb] = getGradientColor(0.5);
   if (subtitle) {
-    parts.push(`${DIM}${fg(vr, vg, vb)}         ${subtitle}${RST} ${DIM}v${version}${RST}`);
+    contentLines.push(`${DIM}${fg(vr, vg, vb)}         ${subtitle}${RST} ${DIM}v${version}${RST}`);
   } else {
-    parts.push(`${DIM}${fg(vr, vg, vb)}  v${version}${RST}`);
+    contentLines.push(`${DIM}${fg(vr, vg, vb)}  v${version}${RST}`);
   }
-  parts.push('');
+
+  // Tagline (random on each launch)
+  const taglines = [
+    'Powering The Everything Platform',
+    'Build everything. Ship anything.',
+    'Where everything gets built',
+    'Everything starts here',
+    'Build everything',
+    'Create without limits',
+  ];
+  const tagline = taglines[Math.floor(Math.random() * taglines.length)];
+  const [tr, tg, tb] = getGradientColor(0.65);
+  contentLines.push(`${DIM}${fg(tr, tg, tb)}  ${tagline}${RST}`);
+
+  // Box spans full terminal width, content centered inside
+  const boxWidth = cols - 2; // subtract 2 for the │ borders
+
+  // Border colors (use the gradient midpoint)
+  const [br, bg, bb] = getGradientColor(0.4);
+  const bc = `${DIM}${fg(br, bg, bb)}`;
+
+  // Build bordered output
+  const top = `${bc}┌${'─'.repeat(boxWidth)}┐${RST}`;
+  const bottom = `${bc}└${'─'.repeat(boxWidth)}┘${RST}`;
+  const empty = `${bc}│${RST}${' '.repeat(boxWidth)}${bc}│${RST}`;
+
+  const parts = ['', top, empty];
+
+  for (const line of contentLines) {
+    const padded = center(line, boxWidth);
+    parts.push(`${bc}│${RST}${padded}${bc}│${RST}`);
+  }
+
+  parts.push(empty, bottom, '');
 
   return parts.join('\n');
 }

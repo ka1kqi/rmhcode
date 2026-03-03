@@ -26,9 +26,9 @@ function patchFile(source, dest) {
   let patchCount = 0;
 
   function replaceAll(find, replace, label) {
-    const count = code.split(find).length - 1;
+    let count = 0;
+    code = code.replaceAll(find, () => { count++; return replace; });
     if (count > 0) {
-      code = code.replaceAll(find, replace);
       console.log(`  ✓ ${label}: ${count} replacement(s)`);
       patchCount += count;
     } else {
@@ -40,6 +40,23 @@ function patchFile(source, dest) {
 
   // Replace Claude's signature orange accent
   replaceAll('#da7756', RMHCODE_ACCENT, 'Replace Claude orange accent');
+
+  // Replace orange theme colors (spinner/shimmer) with rmhcode purple gradient
+  replaceAll(
+    'claude:"rgb(215,119,87)"',
+    'claude:"rgb(132,122,206)"',
+    'Theme claude color → purple'
+  );
+  replaceAll(
+    'claudeShimmer:"rgb(245,149,117)"',
+    'claudeShimmer:"rgb(162,152,236)"',
+    'Theme claudeShimmer (light) → light purple'
+  );
+  replaceAll(
+    'claudeShimmer:"rgb(235,159,127)"',
+    'claudeShimmer:"rgb(162,152,236)"',
+    'Theme claudeShimmer (dark) → light purple'
+  );
 
   // ── 2. Rebrand user-visible UI text ───────────────────────────────────
 
@@ -129,56 +146,67 @@ function patchFile(source, dest) {
     'MCP server name rebrand'
   );
 
-  // ── 4. Suppress header when RMHCODE=1 ─────────────────────────────────
+  // ── 3b. Broad "Claude Code" → "rmhcode" catch-all ──────────────────────
+  // This catches any remaining "Claude Code" instances not hit by specific patterns above.
+  replaceAll('Claude Code', 'rmhcode', 'Broad Claude Code → rmhcode');
 
-  // The header rendering function IR1() renders the welcome screen.
-  // We patch it to return null when RMHCODE env is set.
-  const headerFnPattern = /function IR1\(\)\{let A=w6\(/;
-  const headerMatch = code.match(headerFnPattern);
-  if (headerMatch) {
-    const idx = code.indexOf(headerMatch[0]);
-    const injection = `function IR1(){if(process.env.RMHCODE==="1")return null;let A=w6(`;
-    code = code.slice(0, idx) + injection + code.slice(idx + headerMatch[0].length);
-    console.log('  ✓ Patched IR1 (welcome screen) to suppress when RMHCODE=1');
-    patchCount++;
-  } else {
-    console.log('  - Header function IR1 not found (trying alternative pattern)');
+  // ── 3c. Standalone "Claude" in user-facing text ─────────────────────────
+  // These replace behavioral/descriptive text where "Claude" refers to the assistant.
+  // We preserve model names (Claude Opus, Claude Sonnet, Claude Haiku),
+  // subscription tiers (Claude Max, Claude Team, Claude Enterprise),
+  // and URLs/identifiers.
+  replaceAll('"Claude will ', '"rmhcode will ', 'Claude will → rmhcode will');
+  replaceAll('"Claude wants ', '"rmhcode wants ', 'Claude wants → rmhcode wants');
+  replaceAll('"Claude is ', '"rmhcode is ', 'Claude is → rmhcode is');
+  replaceAll('"Claude has ', '"rmhcode has ', 'Claude has → rmhcode has');
+  replaceAll('"Claude found ', '"rmhcode found ', 'Claude found → rmhcode found');
+  replaceAll('"Claude can ', '"rmhcode can ', 'Claude can → rmhcode can');
+  replaceAll('"Claude may ', '"rmhcode may ', 'Claude may → rmhcode may');
+  replaceAll('"Claude decides ', '"rmhcode decides ', 'Claude decides → rmhcode decides');
+  replaceAll('"Claude understands', '"rmhcode understands', 'Claude understands → rmhcode');
+  replaceAll('"Claude completes ', '"rmhcode completes ', 'Claude completes → rmhcode');
+  replaceAll('"Claude explains ', '"rmhcode explains ', 'Claude explains → rmhcode');
+  replaceAll('"Claude pauses ', '"rmhcode pauses ', 'Claude pauses → rmhcode');
+  replaceAll('"Claude in Chrome', '"rmhcode in Chrome', 'Claude in Chrome → rmhcode');
+  replaceAll('"Claude account', '"rmhcode account', 'Claude account → rmhcode');
+  replaceAll('"Claude API', '"rmhcode API', 'Claude API → rmhcode');
+  replaceAll('"Claude Desktop', '"rmhcode Desktop', 'Claude Desktop → rmhcode');
+  replaceAll(' Claude Code ', ' rmhcode ', 'Inline Claude Code refs');
+  replaceAll(' Claude Code.', ' rmhcode.', 'Inline Claude Code sentence-end');
+
+
+  // Patch minified functions to return null when RMHCODE=1 is set.
+  // Each entry: [name, params, firstLocal, label]
+  const suppressTargets = [
+    ['IR1', '', 'A', 'welcome screen'],
+    ['cOq', 'A', 'q', 'home screen dashboard'],
+    ['QOq', '', 'A', 'status bar'],
+    ['y9z', '', 'A', 'small Claude logo'],
+  ];
+
+  for (const [name, params, local, label] of suppressTargets) {
+    const pattern = new RegExp(`function ${name}\\(${params}\\)\\{let ${local}=w6\\(`);
+    const match = code.match(pattern);
+    if (match) {
+      const injection = `function ${name}(${params}){if(process.env.RMHCODE==="1")return null;let ${local}=w6(`;
+      code = code.slice(0, match.index) + injection + code.slice(match.index + match[0].length);
+      console.log(`  ✓ Patched ${name} (${label}) to suppress when RMHCODE=1`);
+      patchCount++;
+    } else {
+      console.log(`  - Function ${name} not found (skipped)`);
+    }
+  }
+
+  // Fallback for IR1: if the function wasn't found, try patching the welcome message directly
+  if (!code.match(/function IR1\(\)\{if\(process\.env/)) {
     const welcomeCheck = 'welcomeMessage:"Welcome to rmhcode"';
     if (code.includes(welcomeCheck)) {
       replaceAll(
         welcomeCheck,
         'welcomeMessage:process.env.RMHCODE==="1"?"":("Welcome to rmhcode")',
-        'Suppress welcome via env check'
+        'Suppress welcome via env check (IR1 fallback)'
       );
     }
-  }
-
-  // The status bar function QOq() renders "Claude Code vX.X.X" + model info.
-  // We patch it to return null when RMHCODE=1 is set.
-  const statusBarPattern = /function QOq\(\)\{let A=w6\(/;
-  const statusMatch = code.match(statusBarPattern);
-  if (statusMatch) {
-    const idx = code.indexOf(statusMatch[0]);
-    const injection = `function QOq(){if(process.env.RMHCODE==="1")return null;let A=w6(`;
-    code = code.slice(0, idx) + injection + code.slice(idx + statusMatch[0].length);
-    console.log('  ✓ Patched QOq (status bar) to suppress when RMHCODE=1');
-    patchCount++;
-  } else {
-    console.log('  - Status bar function QOq not found (skipped)');
-  }
-
-  // The small Claude logo y9z() renders in the status bar.
-  // Suppress it when RMHCODE=1 is set.
-  const logoPattern = /function y9z\(\)\{let A=w6\(/;
-  const logoMatch = code.match(logoPattern);
-  if (logoMatch) {
-    const idx = code.indexOf(logoMatch[0]);
-    const injection = `function y9z(){if(process.env.RMHCODE==="1")return null;let A=w6(`;
-    code = code.slice(0, idx) + injection + code.slice(idx + logoMatch[0].length);
-    console.log('  ✓ Patched y9z (small Claude logo) to suppress when RMHCODE=1');
-    patchCount++;
-  } else {
-    console.log('  - Small logo function y9z not found (skipped)');
   }
 
   console.log(`\n  Total patches applied: ${patchCount}`);
