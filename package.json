@@ -1,0 +1,21 @@
+{
+  "name": "rmhcode",
+  "version": "1.0.0",
+  "description": "rmhcode - A rebranded Claude Code CLI with a Gemini-style banner",
+  "type": "module",
+  "bin": {
+    "rmhcode": "./bin/rmhcode.mjs"
+  },
+  "scripts": {
+    "patch": "node scripts/patch-cli.mjs",
+    "postinstall": "node scripts/patch-cli.mjs",
+    "test": "node bin/rmhcode.mjs --version"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^2.1.63"
+  },
+  "license": "MIT"
+}

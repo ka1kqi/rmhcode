@@ -1,0 +1,4 @@
+node_modules/
+patched/
+*.tgz
+.DS_Store
