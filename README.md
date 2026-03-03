@@ -1,6 +1,8 @@
-# rmhcode
+<div align="center">
 
-A rebranded [Claude Code](https://github.com/anthropics/claude-code) CLI with a Gemini CLI-style ASCII art banner and custom color theme.
+<img src="assets/gradient-bar.svg" width="100%" alt=""/>
+
+<br/>
 
 ```
  ██╗    ██████╗ ███╗   ███╗██╗  ██╗ ██████╗ ██████╗ ██████╗ ███████╗
@@ -10,6 +12,18 @@ A rebranded [Claude Code](https://github.com/anthropics/claude-code) CLI with a 
  ██╔╝   ██║  ██║██║ ╚═╝ ██║██║  ██║╚██████╗╚██████╔╝██████╔╝███████╗
  ╚═╝    ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
 ```
+
+A rebranded [Claude Code](https://github.com/anthropics/claude-code) CLI with a Gemini-style ASCII art banner and custom color theme.
+
+<p>
+  <a href="#install"><img src="https://img.shields.io/badge/install-one--liner-4796E4?style=flat-square" alt="Install"/></a>
+  <img src="https://img.shields.io/badge/node-%3E%3D18-847ACE?style=flat-square&logo=node.js&logoColor=white" alt="Node.js"/>
+  <img src="https://img.shields.io/badge/license-MIT-C3677F?style=flat-square" alt="License"/>
+</p>
+
+<img src="assets/gradient-bar.svg" width="100%" alt=""/>
+
+</div>
 
 ## Install
 
@@ -57,7 +71,19 @@ On `npm install`, a patch script:
 3. Rebrands all user-facing "Claude Code" text to "rmhcode"
 4. Suppresses the built-in Claude Code header so only the rmhcode banner shows
 
-The wrapper CLI (`bin/rmhcode.mjs`) displays a Gemini CLI-style gradient banner (blue → purple → pink) on startup, then passes all arguments through to the patched CLI.
+The wrapper CLI (`bin/rmhcode.mjs`) displays a gradient banner ( ${\color{#4796E4}blue}$ ${\color{#847ACE}purple}$ ${\color{#C3677F}pink}$ ) on startup, then passes all arguments through to the patched CLI.
+
+## Color Palette
+
+| Swatch | Hex | Role |
+|--------|-----|------|
+| ![#4796E4](https://img.shields.io/badge/-%234796E4-4796E4?style=flat-square) | `#4796E4` | Blue (gradient start) |
+| ![#847ACE](https://img.shields.io/badge/-%23847ACE-847ACE?style=flat-square) | `#847ACE` | Purple (primary accent) |
+| ![#C3677F](https://img.shields.io/badge/-%23C3677F-C3677F?style=flat-square) | `#C3677F` | Pink (gradient end) |
+
+<div align="center">
+<img src="assets/gradient-bar.svg" width="100%" alt=""/>
+</div>
 
 ## License
 
