@@ -63,10 +63,11 @@ export async function editBuild(args) {
 
     info('Updating build...');
 
-    const data = await apiRequest(`/api/user-builds/${build.id}`, {
-      method: 'PUT',
+    const data = await apiRequest('/api/user-builds', {
+      method: 'POST',
       token: config.token,
       body: {
+        id: build.id,
         title,
         description,
         repoUrl: repoUrl || undefined,
@@ -79,8 +80,8 @@ export async function editBuild(args) {
     });
 
     console.log('');
-    success(`Build "${data.title}" updated!`);
-    console.log(`  ${color.dim('View at:')} ${API_BASE}/user-builds/${data.slug}`);
+    success(`Build "${data.title || title}" updated!`);
+    console.log(`  ${color.dim('View at:')} ${API_BASE}/user-builds/${data.slug || build.slug}`);
     console.log('');
   } catch (e) {
     error(e instanceof Error ? e.message : 'Failed to update build');

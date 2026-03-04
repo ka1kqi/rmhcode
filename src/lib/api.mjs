@@ -23,7 +23,8 @@ export async function apiRequest(path, options = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const data = await res.json();
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
 
   if (!res.ok) {
     throw new Error(data.error || `API error: ${res.status}`);
