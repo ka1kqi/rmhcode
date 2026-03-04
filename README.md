@@ -102,6 +102,7 @@ $ rmhcode push-build
 ? Description *: A web app built with Next.js and Prisma
 ? Repository URL: https://github.com/user/repo
 ? Demo URL: https://my-project.vercel.app
+? Thumbnail Image URL:
 ? Technologies (comma-separated): Next.js, TypeScript, Prisma
 ? Tags (comma-separated): web, fullstack
 ? Visibility (public/unlisted/private) (public):
