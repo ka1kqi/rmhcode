@@ -78,6 +78,7 @@ node "%USERPROFILE%\.rmhcode\bin\rmhcode.mjs" %*
 ```bash
 rmhcode              # launch with banner
 rmhcode --init       # generate a CLAUDE.md for your project
+rmhcode --tmux       # launch a 3-pane tmux workspace
 rmhcode --version    # show version
 rmhcode -p "prompt"  # print mode (no banner)
 rmhcode --no-banner  # suppress banner
@@ -215,6 +216,29 @@ $ rmhcode edit-build my-cool-project
 Opens interactive prompts to update any field. Press Enter to keep the current value for a field.
 
 Token is stored at `~/.rmhcode/config.json` with owner-only permissions. Tokens expire after 30 days and can be revoked at [rmhstudios.com/rmhcode](https://rmhstudios.com/rmhcode).
+
+### `--tmux`: Tmux Workspace
+
+Launch a ready-made 3-pane tmux session:
+
+```
++──────────────+──────────────+
+|              |   rmhcode    |
+|   rmhcode    |   (top-R)    |
+|   (left)     +--------------+
+|              |   shell      |
+|              |   (bot-R)    |
++──────────────+──────────────+
+```
+
+```bash
+rmhcode --tmux                    # launch workspace
+rmhcode --tmux --provider gemini  # all panes use Gemini
+```
+
+- Auto-installs tmux via Homebrew (macOS) or your Linux package manager if missing
+- Reattaches to an existing `rmhcode` session if one is already running
+- Detects nested tmux and exits cleanly
 
 ### `--init`: Auto-generate CLAUDE.md
 
