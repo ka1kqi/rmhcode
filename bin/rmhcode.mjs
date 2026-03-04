@@ -7,9 +7,25 @@ import { execFileSync, spawn } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { existsSync, readFileSync, readdirSync, writeFileSync, statSync } from 'node:fs';
+import { providers, defaultProvider, providerNames } from '../src/providers/index.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
+
+// ── Provider selection ──────────────────────────────────────────────────
+const providerIdx = process.argv.indexOf('--provider');
+let providerName = defaultProvider;
+if (providerIdx !== -1 && process.argv[providerIdx + 1]) {
+  providerName = process.argv[providerIdx + 1];
+}
+
+if (!providers[providerName]) {
+  console.error(`\x1b[31mError: Unknown provider "${providerName}".\x1b[0m`);
+  console.error(`Available providers: ${providerNames.join(', ')}`);
+  process.exit(1);
+}
+
+const provider = providers[providerName];
 
 // ── Banner ──────────────────────────────────────────────────────────────
 
@@ -37,7 +53,7 @@ const suppressBanner = process.argv.includes('--no-banner') ||
   process.env.RMHCODE_NO_BANNER === '1';
 
 if (isInteractive && !suppressBanner) {
-  printBanner(version);
+  printBanner(version, provider.displayName);
 }
 
 // ── RMH Commands ────────────────────────────────────────────────────────
@@ -424,54 +440,36 @@ function detectTasks(cwd) {
   return tasks;
 }
 
-// ── Resolve CLI to run ──────────────────────────────────────────────────
+// ── Resolve and spawn provider CLI ──────────────────────────────────────
 
-function findCLI() {
-  // 1. Prefer patched version (has rebranded colors, no Claude header)
-  const patched = join(ROOT, 'patched', 'cli.js');
-  if (existsSync(patched)) return { path: patched, isPatched: true };
-
-  // 2. Fall back to system `claude`
-  try {
-    const which = execFileSync('which', ['claude'], { encoding: 'utf8' }).trim();
-    if (which) return { path: which, isPatched: false };
-  } catch {}
-
-  // 3. Check common install locations
-  const locations = [
-    join(process.env.HOME || '', '.local', 'bin', 'claude'),
-    join(ROOT, 'node_modules', '.bin', 'claude'),
-    join(ROOT, 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js'),
-  ];
-
-  for (const loc of locations) {
-    if (existsSync(loc)) return { path: loc, isPatched: false };
+// Strip rmhcode-specific flags before passing to provider CLI
+const rawArgs = process.argv.slice(2);
+const args = [];
+for (let i = 0; i < rawArgs.length; i++) {
+  if (rawArgs[i] === '--provider') {
+    i++; // skip the value too
+    continue;
   }
-
-  return null;
+  if (rawArgs[i] === '--no-banner') continue;
+  args.push(rawArgs[i]);
 }
 
-const cli = findCLI();
+const binary = provider.findBinary();
 
-if (!cli) {
-  console.error('\x1b[31mError: Could not find Claude Code CLI.\x1b[0m');
-  console.error('Run the patch script first: node scripts/patch-cli.mjs');
-  console.error('Or install Claude Code: curl -fsSL https://claude.ai/install.sh | bash');
+if (!binary) {
+  console.error(`\x1b[31mError: Could not find ${provider.displayName} CLI.\x1b[0m`);
+  console.error(`Install it: ${provider.installInstructions}`);
+  console.error(`Or switch providers: rmhcode --provider claude`);
   process.exit(1);
 }
 
-// ── Pass through to CLI ─────────────────────────────────────────────────
+// For .js scripts, run with node; for binaries, run directly
+const cmd = binary.isScript ? process.execPath : binary.path;
+const cmdArgs = binary.isScript ? [binary.path, ...args] : args;
 
-// Forward all args (strip --no-banner if present)
-const args = process.argv.slice(2).filter(a => a !== '--no-banner');
-
-// For patched cli.js, run with node; for binaries, run directly
-const cmd = cli.isPatched ? process.execPath : cli.path;
-const cmdArgs = cli.isPatched ? [cli.path, ...args] : args;
-
-// Build env: RMHCODE=1 tells patched CLI to suppress its header
+// Build env: merge provider-specific env vars
+const env = { ...process.env, ...provider.getEnv() };
 // Remove CLAUDECODE to avoid nested session detection
-const env = { ...process.env, RMHCODE: '1' };
 delete env.CLAUDECODE;
 
 const child = spawn(cmd, cmdArgs, {
@@ -480,7 +478,7 @@ const child = spawn(cmd, cmdArgs, {
 });
 
 child.on('error', (err) => {
-  console.error(`\x1b[31mFailed to start: ${err.message}\x1b[0m`);
+  console.error(`\x1b[31mFailed to start ${provider.displayName}: ${err.message}\x1b[0m`);
   process.exit(1);
 });
 
