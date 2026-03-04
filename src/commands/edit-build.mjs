@@ -10,32 +10,14 @@ async function prompt(rl, question, currentValue) {
   return answer.trim() || currentValue || '';
 }
 
-export async function editBuild(args) {
-  const slug = args[0];
-  if (!slug) {
-    error('Usage: rmhcode edit-build <build-name>');
-    info('Use `rmhcode list-builds` to see your builds.');
-    process.exit(1);
-  }
-
-  const config = requireAuth();
+/**
+ * Run the interactive edit prompts for a build object and update via API.
+ * Can be called directly with a build (from list-builds) or via CLI slug.
+ */
+export async function editBuildInteractive(build, config) {
+  const rl = createInterface({ input: stdin, output: stdout });
 
   try {
-    // Fetch user's builds and find the one matching the slug
-    const listing = await apiRequest('/api/user-builds', {
-      token: config.token,
-      params: { userId: config.user.id, limit: '50' },
-    });
-
-    const build = listing.items.find(b => b.slug === slug);
-    if (!build) {
-      error(`Build "${slug}" not found.`);
-      info('Use `rmhcode list-builds` to see your builds.');
-      process.exit(1);
-    }
-
-    const rl = createInterface({ input: stdin, output: stdout });
-
     console.log('');
     console.log(color.bold(`  Edit build: ${build.title}`));
     console.log(color.dim('  Press Enter to keep current value'));
@@ -63,11 +45,10 @@ export async function editBuild(args) {
 
     info('Updating build...');
 
-    const data = await apiRequest('/api/user-builds', {
-      method: 'POST',
+    const data = await apiRequest(`/api/user-builds/${build.id}`, {
+      method: 'PATCH',
       token: config.token,
       body: {
-        id: build.id,
         title,
         description,
         repoUrl: repoUrl || undefined,
@@ -83,6 +64,36 @@ export async function editBuild(args) {
     success(`Build "${data.title || title}" updated!`);
     console.log(`  ${color.dim('View at:')} ${API_BASE}/user-builds/${data.slug || build.slug}`);
     console.log('');
+  } catch (e) {
+    rl.close();
+    throw e;
+  }
+}
+
+export async function editBuild(args) {
+  const slug = args[0];
+  if (!slug) {
+    error('Usage: rmhcode edit-build <build-name>');
+    info('Use `rmhcode list-builds` to see your builds.');
+    process.exit(1);
+  }
+
+  const config = requireAuth();
+
+  try {
+    const listing = await apiRequest('/api/user-builds', {
+      token: config.token,
+      params: { userId: config.user.id, limit: '50' },
+    });
+
+    const build = listing.items.find(b => b.slug === slug);
+    if (!build) {
+      error(`Build "${slug}" not found.`);
+      info('Use `rmhcode list-builds` to see your builds.');
+      process.exit(1);
+    }
+
+    await editBuildInteractive(build, config);
   } catch (e) {
     error(e instanceof Error ? e.message : 'Failed to update build');
     process.exit(1);
