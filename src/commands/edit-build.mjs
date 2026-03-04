@@ -21,10 +21,18 @@ export async function editBuild(args) {
   const config = requireAuth();
 
   try {
-    // Fetch existing build by slug
-    const build = await apiRequest(`/api/user-builds/${slug}`, {
+    // Fetch user's builds and find the one matching the slug
+    const listing = await apiRequest('/api/user-builds', {
       token: config.token,
+      params: { userId: config.user.id, limit: '50' },
     });
+
+    const build = listing.items.find(b => b.slug === slug);
+    if (!build) {
+      error(`Build "${slug}" not found.`);
+      info('Use `rmhcode list-builds` to see your builds.');
+      process.exit(1);
+    }
 
     const rl = createInterface({ input: stdin, output: stdout });
 
@@ -55,8 +63,8 @@ export async function editBuild(args) {
 
     info('Updating build...');
 
-    const data = await apiRequest(`/api/user-builds/${slug}`, {
-      method: 'PATCH',
+    const data = await apiRequest(`/api/user-builds/${build.id}`, {
+      method: 'PUT',
       token: config.token,
       body: {
         title,
