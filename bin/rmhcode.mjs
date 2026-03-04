@@ -40,7 +40,7 @@ try {
 
 // Only show banner for interactive sessions (not piped, not --help, etc.)
 const isInteractive = process.stdin.isTTY && process.stdout.isTTY;
-const rmhCommands = new Set(['login', 'whoami', 'push-build', 'list-builds', 'logout']);
+const rmhCommands = new Set(['login', 'whoami', 'push-build', 'list-builds', 'edit-build', 'logout']);
 const suppressBanner = process.argv.includes('--no-banner') ||
   process.argv.includes('-p') ||
   process.argv.includes('--print') ||
@@ -63,12 +63,14 @@ import { whoami } from '../src/commands/whoami.mjs';
 import { pushBuild } from '../src/commands/push-build.mjs';
 import { listBuilds } from '../src/commands/list-builds.mjs';
 import { logout } from '../src/commands/logout.mjs';
+import { editBuild } from '../src/commands/edit-build.mjs';
 
 const RMH_COMMANDS = {
   login,
   whoami,
   'push-build': pushBuild,
   'list-builds': listBuilds,
+  'edit-build': editBuild,
   logout,
 };
 
