@@ -256,6 +256,68 @@ function main() {
   }
 
   console.log('\nDone! Patched CLI is at:', dest);
+
+  // ── Configure bundled MCP servers ────────────────────────────────────
+  configureMCPServers();
+}
+
+function configureMCPServers() {
+  const homedir = process.env.HOME || process.env.USERPROFILE;
+  if (!homedir) {
+    console.log('  - Could not determine home directory, skipping MCP setup');
+    return;
+  }
+
+  const configPath = join(homedir, '.claude.json');
+  let config = {};
+
+  if (existsSync(configPath)) {
+    try {
+      config = JSON.parse(readFileSync(configPath, 'utf8'));
+    } catch {
+      console.log('  - Could not parse ~/.claude.json, skipping MCP setup');
+      return;
+    }
+  }
+
+  if (!config.mcpServers) {
+    config.mcpServers = {};
+  }
+
+  let changed = false;
+
+  // ── DeepWiki MCP ────────────────────────────────────────────────────
+  if (config.mcpServers.deepwiki) {
+    console.log('  - DeepWiki MCP already configured (skipped)');
+  } else {
+    config.mcpServers.deepwiki = {
+      type: 'http',
+      url: 'https://mcp.deepwiki.com/mcp',
+    };
+    console.log('  ✓ DeepWiki MCP configured');
+    changed = true;
+  }
+
+  // ── GitHub MCP ──────────────────────────────────────────────────────
+  if (config.mcpServers.github) {
+    console.log('  - GitHub MCP already configured (skipped)');
+  } else {
+    config.mcpServers.github = {
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-github'],
+    };
+    console.log('  ✓ GitHub MCP configured');
+    changed = true;
+
+    if (!process.env.GITHUB_PERSONAL_ACCESS_TOKEN) {
+      console.log('    ℹ Set GITHUB_PERSONAL_ACCESS_TOKEN for full GitHub MCP functionality');
+    }
+  }
+
+  if (changed) {
+    writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+    console.log('  ✓ MCP servers saved to ~/.claude.json');
+  }
 }
 
 main();

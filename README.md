@@ -50,12 +50,32 @@ ln -s ~/.rmhcode/bin/rmhcode.mjs ~/.local/bin/rmhcode
 
 ```bash
 rmhcode              # launch with banner
+rmhcode --init       # generate a CLAUDE.md for your project
 rmhcode --version    # show version
 rmhcode -p "prompt"  # print mode (no banner)
 rmhcode --no-banner  # suppress banner
 ```
 
 Set `RMHCODE_NO_BANNER=1` to always suppress the banner.
+
+### `--init`: Auto-generate CLAUDE.md
+
+Running `rmhcode --init` in any project directory scans your codebase and generates a `CLAUDE.md` file with:
+
+- **Project name** (from `package.json`, `Cargo.toml`, `pyproject.toml`, or directory name)
+- **Tech stack** detection (frameworks, databases, testing tools, styling, package managers)
+- **Directory structure** with auto-detected purposes
+- **Conventions** (linting, formatting, TypeScript config)
+- **Common tasks** (extracted from `package.json` scripts)
+
+## MCP Integrations
+
+rmhcode comes with bundled MCP (Model Context Protocol) servers that are automatically configured during installation:
+
+- **[DeepWiki](https://deepwiki.com)** — AI-powered documentation for any public GitHub repository. Browse wiki structures, read full docs, or ask questions grounded in a repo's source code.
+- **GitHub MCP** — Interact with GitHub issues, pull requests, and repositories directly from the CLI.
+
+MCP servers are saved to `~/.claude.json` on install. To use GitHub MCP's full capabilities, set `GITHUB_PERSONAL_ACCESS_TOKEN` in your environment.
 
 ## Uninstall
 
@@ -70,6 +90,7 @@ On `npm install`, a patch script:
 2. Replaces Claude's orange accent (`#da7756`) with rmhcode's purple (`#847ACE`)
 3. Rebrands all user-facing "Claude Code" text to "rmhcode"
 4. Suppresses the built-in Claude Code header so only the rmhcode banner shows
+5. Configures bundled MCP servers (DeepWiki, GitHub) in `~/.claude.json`
 
 The wrapper CLI (`bin/rmhcode.mjs`) displays a gradient banner ( ${\color{#4796E4}blue}$ ${\color{#847ACE}purple}$ ${\color{#C3677F}pink}$ ) on startup, then passes all arguments through to the patched CLI.
 
