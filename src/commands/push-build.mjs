@@ -38,6 +38,7 @@ export async function pushBuild() {
 
     const repoUrl = await prompt(rl, 'Repository URL');
     const demoUrl = await prompt(rl, 'Demo URL');
+    const thumbnailUrl = await prompt(rl, 'Thumbnail Image URL');
 
     const techInput = await prompt(rl, 'Technologies (comma-separated)');
     const technologies = techInput ? techInput.split(',').map(t => t.trim()).filter(Boolean) : [];
@@ -72,6 +73,7 @@ export async function pushBuild() {
         description,
         repoUrl: repoUrl || undefined,
         demoUrl: demoUrl || undefined,
+        thumbnailUrl: thumbnailUrl || undefined,
         technologies,
         tags,
         visibility,

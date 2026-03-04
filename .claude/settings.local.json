@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(git -C /Users/sohumjoshi/rmhcode log --oneline -10)",
+      "Bash(git -C /Users/sohumjoshi/rmhcode show --stat)"
+    ]
+  }
+}
