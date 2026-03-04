@@ -6,12 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { requireAuth } from '../lib/config.mjs';
 import { apiRequest, API_BASE } from '../lib/api.mjs';
 import { success, error, info, color } from '../lib/output.mjs';
-
-async function prompt(rl, question, defaultValue) {
-  const suffix = defaultValue ? ` ${color.dim(`(${defaultValue})`)}` : '';
-  const answer = await rl.question(`${color.cyan('?')} ${question}${suffix}: `);
-  return answer.trim() || defaultValue || '';
-}
+import { prompt, parseCommaSeparated } from '../lib/prompt.mjs';
 
 async function createGitHubRepo() {
   const token = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
@@ -52,7 +47,6 @@ async function createGitHubRepo() {
   }
 
   const remoteUrl = repo.clone_url;
-  // Authenticated URL for push, then reset to clean URL
   const authUrl = remoteUrl.replace('https://', `https://${token}@`);
 
   // Add or update the origin remote (use auth URL for push)
@@ -63,26 +57,27 @@ async function createGitHubRepo() {
     execFileSync('git', ['remote', 'add', 'origin', authUrl], { stdio: 'pipe' });
   }
 
-  // Stage, commit, and push
-  info('Staging files...');
-  execFileSync('git', ['add', '.'], { stdio: 'inherit', timeout: 30000 });
+  // Always reset remote to clean URL, even if git operations fail
   try {
-    execFileSync('git', ['commit', '-m', 'Initial commit'], { stdio: 'inherit', timeout: 30000 });
-  } catch {
-    // commit fails if there's nothing new to commit — that's fine
+    info('Staging files...');
+    execFileSync('git', ['add', '.'], { stdio: 'inherit', timeout: 30000 });
+    try {
+      execFileSync('git', ['commit', '-m', 'Initial commit'], { stdio: 'inherit', timeout: 30000 });
+    } catch {
+      // commit fails if there's nothing new to commit — that's fine
+    }
+    const branch = execFileSync('git', ['branch', '--show-current'], { stdio: 'pipe' })
+      .toString()
+      .trim();
+    info('Pushing to GitHub...');
+    execFileSync('git', ['push', '-u', 'origin', branch], {
+      stdio: 'inherit',
+      timeout: 60000,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    });
+  } finally {
+    execFileSync('git', ['remote', 'set-url', 'origin', remoteUrl], { stdio: 'pipe' });
   }
-  const branch = execFileSync('git', ['branch', '--show-current'], { stdio: 'pipe' })
-    .toString()
-    .trim();
-  info('Pushing to GitHub...');
-  execFileSync('git', ['push', '-u', 'origin', branch], {
-    stdio: 'inherit',
-    timeout: 60000,
-    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
-  });
-
-  // Reset remote to clean URL (no token)
-  execFileSync('git', ['remote', 'set-url', 'origin', remoteUrl], { stdio: 'pipe' });
 
   return repo.html_url;
 }
@@ -136,10 +131,10 @@ export async function pushBuild() {
     const thumbnailUrl = await prompt(rl, 'Thumbnail Image URL');
 
     const techInput = await prompt(rl, 'Technologies (comma-separated)');
-    const technologies = techInput ? techInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const technologies = parseCommaSeparated(techInput);
 
     const tagInput = await prompt(rl, 'Tags (comma-separated)');
-    const tags = tagInput ? tagInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const tags = parseCommaSeparated(tagInput);
 
     const visibilityInput = await prompt(rl, 'Visibility (public/unlisted/private)', 'public');
     const visibility = visibilityInput.toUpperCase();
@@ -150,9 +145,11 @@ export async function pushBuild() {
     let readme;
     const readmePath = join(process.cwd(), 'README.md');
     if (existsSync(readmePath)) {
+      info('README.md detected in current directory');
       const includeReadme = await prompt(rl, 'Include README.md from current directory? (y/n)', 'y');
       if (includeReadme.toLowerCase() !== 'n') {
         readme = readFileSync(readmePath, 'utf-8');
+        info('README.md included');
       }
     }
 

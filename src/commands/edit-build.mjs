@@ -3,16 +3,12 @@ import { stdin, stdout } from 'node:process';
 import { requireAuth } from '../lib/config.mjs';
 import { apiRequest, API_BASE } from '../lib/api.mjs';
 import { success, error, info, color } from '../lib/output.mjs';
-
-async function prompt(rl, question, currentValue) {
-  const suffix = currentValue ? ` ${color.dim(`(${currentValue})`)}` : '';
-  const answer = await rl.question(`${color.cyan('?')} ${question}${suffix}: `);
-  return answer.trim() || currentValue || '';
-}
+import { prompt, parseCommaSeparated } from '../lib/prompt.mjs';
 
 /**
  * Run the interactive edit prompts for a build object and update via API.
  * Can be called directly with a build (from list-builds) or via CLI slug.
+ * Mutates the build object with the API response so callers see updated state.
  */
 export async function editBuildInteractive(build, config) {
   const rl = createInterface({ input: stdin, output: stdout });
@@ -31,11 +27,11 @@ export async function editBuildInteractive(build, config) {
 
     const currentTech = (build.technologies || []).join(', ');
     const techInput = await prompt(rl, 'Technologies (comma-separated)', currentTech);
-    const technologies = techInput ? techInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const technologies = parseCommaSeparated(techInput);
 
     const currentTags = (build.tags || []).join(', ');
     const tagInput = await prompt(rl, 'Tags (comma-separated)', currentTags);
-    const tags = tagInput ? tagInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const tags = parseCommaSeparated(tagInput);
 
     const currentVis = (build.visibility || 'PUBLIC').toLowerCase();
     const visibilityInput = await prompt(rl, 'Visibility (public/unlisted/private)', currentVis);
@@ -60,9 +56,20 @@ export async function editBuildInteractive(build, config) {
       },
     });
 
+    // Sync the build object so callers (e.g. list-builds) see updated state
+    build.title = data.title ?? title;
+    build.description = data.description ?? description;
+    build.slug = data.slug ?? build.slug;
+    build.visibility = data.visibility ?? visibility;
+    build.technologies = data.technologies ?? technologies;
+    build.tags = data.tags ?? tags;
+    build.repoUrl = data.repoUrl ?? repoUrl;
+    build.demoUrl = data.demoUrl ?? demoUrl;
+    build.thumbnailUrl = data.thumbnailUrl ?? thumbnailUrl;
+
     console.log('');
-    success(`Build "${data.title || title}" updated!`);
-    console.log(`  ${color.dim('View at:')} ${API_BASE}/user-builds/${data.slug || build.slug}`);
+    success(`Build "${build.title}" updated!`);
+    console.log(`  ${color.dim('View at:')} ${API_BASE}/user-builds/${build.slug}`);
     console.log('');
   } catch (e) {
     rl.close();

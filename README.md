@@ -191,6 +191,21 @@ This will:
 
 Requires `GITHUB_PERSONAL_ACCESS_TOKEN` in your environment with the `repo` scope. Create one at [github.com/settings/tokens](https://github.com/settings/tokens).
 
+### Browsing your builds
+
+```bash
+$ rmhcode list-builds
+
+  Your Builds
+  ↑/↓ navigate · Enter select · q quit
+
+ ❯ My Cool Project                 ● Published  public
+   Portfolio Site                   ● Draft      unlisted
+   API Backend                     ● Published  public
+```
+
+Select a build to open its action menu — edit fields, publish/unpublish, or view the URL — all without leaving the terminal.
+
 ### Editing a build
 
 ```bash
@@ -259,6 +274,26 @@ The wrapper CLI (`bin/rmhcode.mjs`) intercepts RMH-specific commands (`login`, `
 <img src="assets/gradient-bar.svg" width="100%" alt=""/>
 </div>
 
+## Standalone Binaries
+
+Pre-built standalone binaries (no Node.js required) are available on the [Releases](https://github.com/ka1kqi/rmhcode/releases) page for:
+
+| Platform | Architecture | Binary |
+|----------|-------------|--------|
+| Linux | x64 | `rmhcode-linux-x64` |
+| Linux | ARM64 | `rmhcode-linux-arm64` |
+| macOS | x64 (Intel) | `rmhcode-macos-x64` |
+| macOS | ARM64 (Apple Silicon) | `rmhcode-macos-arm64` |
+| Windows | x64 | `rmhcode-win-x64.exe` |
+
+Download the binary for your platform, make it executable (`chmod +x` on Linux/macOS), and place it in your PATH.
+
+To build binaries locally with [Bun](https://bun.sh):
+
+```bash
+bun build ./bin/rmhcode.mjs --compile --target=bun-linux-x64 --outfile dist/rmhcode-linux-x64
+```
+
 ## Building the Windows Installer
 
 To build the installer locally on a Windows machine:
@@ -277,8 +312,8 @@ The installer `.exe` will be output to the `dist/` directory.
 The GitHub Actions workflow at `.github/workflows/build-windows-installer.yml` automatically builds the installer when a version tag is pushed:
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag v1.2.1
+git push origin v1.2.1
 ```
 
 This produces both an installer `.exe` and a portable `.zip`, attached to the GitHub Release.

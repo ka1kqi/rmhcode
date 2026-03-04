@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { writeConfig } from '../lib/config.mjs';
 import { apiRequest, API_BASE } from '../lib/api.mjs';
-import { success, error, info } from '../lib/output.mjs';
+import { success, error, info, color } from '../lib/output.mjs';
 
 function openBrowser(url) {
   const { platform } = process;
@@ -24,8 +24,9 @@ async function loginWithToken(token) {
       body: { token },
     });
 
+    info('Token verified successfully');
     writeConfig({ token, user: data.user });
-    success(`Logged in as ${data.user.username || data.user.name}`);
+    success(`Logged in as ${color.bold(data.user.username || data.user.name)}`);
   } catch (e) {
     error(e instanceof Error ? e.message : 'Login failed');
     process.exit(1);
@@ -63,8 +64,9 @@ async function loginWithBrowser() {
       if (token && userParam) {
         try {
           const user = JSON.parse(userParam);
+          info('Authorization received');
           writeConfig({ token, user });
-          success(`Logged in as ${user.username || user.name}`);
+          success(`Logged in as ${color.bold(user.username || user.name)}`);
         } catch {
           error('Failed to parse user info from callback');
         }
@@ -104,8 +106,10 @@ export async function login(args) {
       error('Missing token value. Usage: rmhcode login --token YOUR_TOKEN');
       process.exit(1);
     }
+    info('Authenticating with token...');
     await loginWithToken(token);
   } else {
+    info('Starting browser-based authentication...');
     await loginWithBrowser();
   }
 }

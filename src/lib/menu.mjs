@@ -16,6 +16,7 @@ export function selectMenu(items, options = {}) {
 
     let cursor = 0;
     let escTimeout = null;
+    let resolved = false;
     const { title, dim: dimText, flash } = options;
 
     function render() {
@@ -47,17 +48,25 @@ export function selectMenu(items, options = {}) {
     }
 
     function cleanup() {
+      if (resolved) return;
+      resolved = true;
       if (escTimeout) {
         clearTimeout(escTimeout);
         escTimeout = null;
       }
       process.stdin.setRawMode(false);
       process.stdin.removeListener('data', onKey);
+      process.removeListener('SIGINT', onSigint);
       process.stdin.pause();
       // Restore cursor to where menu started and clear it,
       // so the next menu or output starts from the same position
       process.stdout.write('\x1b[u');
       process.stdout.write('\x1b[J');
+    }
+
+    function onSigint() {
+      cleanup();
+      resolve(null);
     }
 
     function onKey(data) {
@@ -77,8 +86,8 @@ export function selectMenu(items, options = {}) {
         return;
       }
 
-      // Quit
-      if (key === 'q') {
+      // Ctrl+C in raw mode arrives as \x03
+      if (key === '\x03' || key === 'q') {
         cleanup();
         resolve(null);
         return;
@@ -106,9 +115,6 @@ export function selectMenu(items, options = {}) {
       }
     }
 
-    // Clear any stale listeners from previous selectMenu or readline usage
-    process.stdin.removeAllListeners('data');
-
     // Initial draw
     draw();
 
@@ -116,5 +122,6 @@ export function selectMenu(items, options = {}) {
     process.stdin.resume();
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', onKey);
+    process.on('SIGINT', onSigint);
   });
 }

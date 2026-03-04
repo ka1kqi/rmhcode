@@ -1,6 +1,6 @@
 import { requireAuth } from '../lib/config.mjs';
 import { apiRequest, API_BASE } from '../lib/api.mjs';
-import { error, color, padEnd } from '../lib/output.mjs';
+import { error, info, color, padEnd } from '../lib/output.mjs';
 import { selectMenu } from '../lib/menu.mjs';
 import { editBuildInteractive } from './edit-build.mjs';
 
@@ -38,7 +38,8 @@ async function togglePublish(build, config) {
     body: { status: newStatus },
   });
 
-  Object.assign(build, updated);
+  build.status = updated.status ?? newStatus;
+  build.publishedAt = updated.publishedAt ?? build.publishedAt;
 
   return publish
     ? color.green(`✓ "${build.title}" published!`)
@@ -83,6 +84,7 @@ export async function listBuilds() {
   const config = requireAuth();
 
   try {
+    info('Fetching your builds...');
     const data = await apiRequest('/api/user-builds', {
       token: config.token,
       params: { userId: config.user.id, limit: '50' },

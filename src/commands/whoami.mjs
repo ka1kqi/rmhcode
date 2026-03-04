@@ -1,11 +1,12 @@
 import { requireAuth } from '../lib/config.mjs';
 import { apiRequest } from '../lib/api.mjs';
-import { error, color } from '../lib/output.mjs';
+import { error, info, color } from '../lib/output.mjs';
 
 export async function whoami() {
   const config = requireAuth();
 
   try {
+    info('Verifying token...');
     const data = await apiRequest('/api/rmhcode/auth/validate', {
       method: 'POST',
       body: { token: config.token },
