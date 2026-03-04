@@ -13,7 +13,7 @@
  ╚═╝    ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
 ```
 
-A rebranded [Claude Code](https://github.com/anthropics/claude-code) CLI with a Gemini-style ASCII art banner and custom color theme.
+A rebranded [Claude Code](https://github.com/anthropics/claude-code) CLI with a custom color theme, ASCII art banner, and built-in [rmhstudios.com](https://rmhstudios.com) integrations.
 
 <p>
   <a href="#install"><img src="https://img.shields.io/badge/install-one--liner-4796E4?style=flat-square" alt="Install"/></a>
@@ -58,6 +58,63 @@ rmhcode --no-banner  # suppress banner
 
 Set `RMHCODE_NO_BANNER=1` to always suppress the banner.
 
+All standard Claude Code arguments and flags work as normal — rmhcode is a full Claude Code wrapper.
+
+## RMH Builds Integration
+
+Publish and manage projects on the [rmhstudios.com User Builds](https://rmhstudios.com/user-builds) showcase directly from the terminal.
+
+### Authentication
+
+Generate a token at [rmhstudios.com/rmhcode](https://rmhstudios.com/rmhcode), then:
+
+```bash
+rmhcode login --token YOUR_TOKEN
+```
+
+Or use the browser-based flow:
+
+```bash
+rmhcode login
+```
+
+This opens your browser to authorize rmhcode with your RMH account.
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `rmhcode login` | Authenticate with your RMH account (browser flow or `--token`) |
+| `rmhcode whoami` | Show current authenticated user |
+| `rmhcode push-build` | Publish a project to User Builds (interactive prompts) |
+| `rmhcode list-builds` | List your published builds |
+| `rmhcode logout` | Sign out and remove stored token |
+
+### Example: Publishing a build
+
+```bash
+$ rmhcode push-build
+
+  Publish a new build to RMH User Builds
+  Fields marked with * are required
+
+? Title *: My Cool Project
+? Description *: A web app built with Next.js and Prisma
+? Repository URL: https://github.com/user/repo
+? Demo URL: https://my-project.vercel.app
+? Technologies (comma-separated): Next.js, TypeScript, Prisma
+? Tags (comma-separated): web, fullstack
+? Visibility (public/unlisted/private) (public):
+? Publish now? (y/n) (y):
+? Include README.md from current directory? (y/n) (y):
+
+→ Publishing build...
+✓ Build "My Cool Project" published!
+  View at: https://rmhstudios.com/user-builds/my-cool-project
+```
+
+Token is stored at `~/.rmhcode/config.json` with owner-only permissions. Tokens expire after 30 days and can be revoked at [rmhstudios.com/rmhcode](https://rmhstudios.com/rmhcode).
+
 ### `--init`: Auto-generate CLAUDE.md
 
 Running `rmhcode --init` in any project directory scans your codebase and generates a `CLAUDE.md` file with:
@@ -92,7 +149,7 @@ On `npm install`, a patch script:
 4. Suppresses the built-in Claude Code header so only the rmhcode banner shows
 5. Configures bundled MCP servers (DeepWiki, GitHub) in `~/.claude.json`
 
-The wrapper CLI (`bin/rmhcode.mjs`) displays a gradient banner ( ${\color{#4796E4}blue}$ ${\color{#847ACE}purple}$ ${\color{#C3677F}pink}$ ) on startup, then passes all arguments through to the patched CLI.
+The wrapper CLI (`bin/rmhcode.mjs`) intercepts RMH-specific commands (`login`, `whoami`, `push-build`, `list-builds`, `logout`), displays a gradient banner ( ${\color{#4796E4}blue}$ ${\color{#847ACE}purple}$ ${\color{#C3677F}pink}$ ) on startup, then passes all other arguments through to the patched CLI.
 
 ## Color Palette
 
