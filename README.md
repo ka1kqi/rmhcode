@@ -27,6 +27,13 @@ A rebranded [Claude Code](https://github.com/anthropics/claude-code) CLI with a 
 
 ## Install
 
+### Prerequisites
+
+- **Node.js** >= 18
+- **npm**
+
+### macOS / Linux
+
 **One-liner (recommended):**
 
 ```bash
@@ -42,10 +49,29 @@ cd ~/.rmhcode && npm install
 ln -s ~/.rmhcode/bin/rmhcode.mjs ~/.local/bin/rmhcode
 ```
 
-### Prerequisites
+### Windows
 
-- **Node.js** >= 18
-- **npm**
+**Option 1: Installer (.exe)** — Download the latest `rmhcode-*-setup-x64.exe` from [Releases](https://github.com/ka1kqi/rmhcode/releases).
+
+**Option 2: PowerShell one-liner:**
+
+```powershell
+irm https://raw.githubusercontent.com/ka1kqi/rmhcode/main/install.ps1 | iex
+```
+
+**Option 3: Manual:**
+
+```powershell
+git clone https://github.com/ka1kqi/rmhcode.git $env:USERPROFILE\.rmhcode
+cd $env:USERPROFILE\.rmhcode; npm install
+```
+
+Then add `%USERPROFILE%\.rmhcode\bin` to your PATH and create a `rmhcode.cmd` wrapper:
+
+```cmd
+@echo off
+node "%USERPROFILE%\.rmhcode\bin\rmhcode.mjs" %*
+```
 
 ## Usage
 
@@ -171,8 +197,18 @@ MCP servers are saved to `~/.claude.json` on install. To use GitHub MCP's full c
 
 ## Uninstall
 
+**macOS / Linux:**
+
 ```bash
 rm -rf ~/.rmhcode ~/.local/bin/rmhcode
+```
+
+**Windows (installer):** Use Add/Remove Programs or run the uninstaller from the Start Menu.
+
+**Windows (PowerShell install):**
+
+```powershell
+Remove-Item -Recurse ~\.rmhcode, ~\.local\bin\rmhcode.*
 ```
 
 ## How it works
@@ -197,6 +233,39 @@ The wrapper CLI (`bin/rmhcode.mjs`) intercepts RMH-specific commands (`login`, `
 <div align="center">
 <img src="assets/gradient-bar.svg" width="100%" alt=""/>
 </div>
+
+## Building the Windows Installer
+
+To build the installer locally on a Windows machine:
+
+1. Install [Inno Setup 6](https://jrsoftware.org/isdl.php) (or `winget install JRSoftware.InnoSetup`)
+2. Run the build script:
+
+```powershell
+.\installer\build-installer.ps1
+```
+
+The installer `.exe` will be output to the `dist/` directory.
+
+### CI/CD
+
+The GitHub Actions workflow at `.github/workflows/build-windows-installer.yml` automatically builds the installer when a version tag is pushed:
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+This produces both an installer `.exe` and a portable `.zip`, attached to the GitHub Release.
+
+### Code Signing
+
+<!-- TODO: Configure code signing to avoid SmartScreen warnings -->
+The installer is not currently code-signed. To add signing:
+
+- Obtain an EV or OV code signing certificate
+- In the Inno Setup config (`installer/rmhcode.iss`), add a `[Setup]` `SignTool` directive
+- In CI, set the certificate as a GitHub secret and configure `signtool.exe`
 
 ## License
 

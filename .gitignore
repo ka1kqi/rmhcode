@@ -2,6 +2,7 @@ node_modules/
 patched/
 *.tgz
 .DS_Store
+dist/
+config.json
 
-
-CLAUDE.md   
+CLAUDE.md
