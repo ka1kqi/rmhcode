@@ -183,7 +183,8 @@ export function renderBanner(version = '1.0.0', providerDisplayName = 'Claude') 
   } else {
     // Ultra-narrow: just styled text
     const [r, g, b] = getGradientColor(0.3);
-    return `\n${BOLD}${fg(r, g, b)}> rmhcode${RST} ${DIM}v${version}${RST}\n`;
+    const [pr, pg, pb] = getGradientColor(0.8);
+    return `\n${BOLD}${fg(r, g, b)}> rmhcode${RST} ${DIM}v${version}${RST}\n${DIM}${fg(pr, pg, pb)}  Powered by ${providerDisplayName}${RST}\n`;
   }
 
   const coloredLines = applyGradient(art);

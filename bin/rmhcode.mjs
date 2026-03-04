@@ -465,7 +465,8 @@ if (!binary) {
 
 // For .js scripts, run with node; for binaries, run directly
 const cmd = binary.isScript ? process.execPath : binary.path;
-const cmdArgs = binary.isScript ? [binary.path, ...args] : args;
+const finalArgs = provider.buildArgs(args);
+const cmdArgs = binary.isScript ? [binary.path, ...finalArgs] : finalArgs;
 
 // Build env: merge provider-specific env vars
 const env = { ...process.env, ...provider.getEnv() };
