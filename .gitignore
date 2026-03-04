@@ -4,5 +4,6 @@ patched/
 .DS_Store
 dist/
 config.json
+.claude/settings.local.json
 
 CLAUDE.md
