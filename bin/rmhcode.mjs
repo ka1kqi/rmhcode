@@ -49,6 +49,7 @@ const suppressBanner = process.argv.includes('--no-banner') ||
   process.argv.includes('--version') ||
   process.argv.includes('-v') ||
   process.argv.includes('--init') ||
+  process.argv.includes('--tmux') ||
   rmhCommands.has(process.argv[2]) ||
   process.env.RMHCODE_NO_BANNER === '1';
 
@@ -90,6 +91,18 @@ if (firstArg && firstArg in RMH_COMMANDS) {
 if (process.argv.includes('--init')) {
   generateClaudeMd();
   process.exit(0);
+}
+
+// ── --tmux: Launch tmux workspace ──────────────────────────────────────
+
+if (process.argv.includes('--tmux')) {
+  const { launchTmuxSession } = await import('../src/lib/tmux.mjs');
+  const providerArgs = [];
+  const pIdx = process.argv.indexOf('--provider');
+  if (pIdx !== -1 && process.argv[pIdx + 1]) {
+    providerArgs.push('--provider', process.argv[pIdx + 1]);
+  }
+  launchTmuxSession(providerArgs);
 }
 
 function generateClaudeMd() {
@@ -452,6 +465,7 @@ for (let i = 0; i < rawArgs.length; i++) {
     i++; // skip the value too
     continue;
   }
+  if (rawArgs[i] === '--tmux') continue;
   if (rawArgs[i] === '--no-banner') continue;
   args.push(rawArgs[i]);
 }
