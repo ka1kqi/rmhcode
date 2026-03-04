@@ -24,6 +24,7 @@ try {
 
 // Only show banner for interactive sessions (not piped, not --help, etc.)
 const isInteractive = process.stdin.isTTY && process.stdout.isTTY;
+const rmhCommands = new Set(['login', 'whoami', 'push-build', 'list-builds', 'logout']);
 const suppressBanner = process.argv.includes('--no-banner') ||
   process.argv.includes('-p') ||
   process.argv.includes('--print') ||
@@ -32,10 +33,38 @@ const suppressBanner = process.argv.includes('--no-banner') ||
   process.argv.includes('--version') ||
   process.argv.includes('-v') ||
   process.argv.includes('--init') ||
+  rmhCommands.has(process.argv[2]) ||
   process.env.RMHCODE_NO_BANNER === '1';
 
 if (isInteractive && !suppressBanner) {
   printBanner(version);
+}
+
+// ── RMH Commands ────────────────────────────────────────────────────────
+
+import { login } from '../src/commands/login.mjs';
+import { whoami } from '../src/commands/whoami.mjs';
+import { pushBuild } from '../src/commands/push-build.mjs';
+import { listBuilds } from '../src/commands/list-builds.mjs';
+import { logout } from '../src/commands/logout.mjs';
+
+const RMH_COMMANDS = {
+  login,
+  whoami,
+  'push-build': pushBuild,
+  'list-builds': listBuilds,
+  logout,
+};
+
+const firstArg = process.argv[2];
+if (firstArg && firstArg in RMH_COMMANDS) {
+  try {
+    await RMH_COMMANDS[firstArg](process.argv.slice(3));
+  } catch (e) {
+    console.error(`\x1b[31m${e instanceof Error ? e.message : 'Unknown error'}\x1b[0m`);
+    process.exit(1);
+  }
+  process.exit(0);
 }
 
 // ── --init: Generate CLAUDE.md ──────────────────────────────────────────
