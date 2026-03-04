@@ -60,6 +60,37 @@ Set `RMHCODE_NO_BANNER=1` to always suppress the banner.
 
 All standard Claude Code arguments and flags work as normal — rmhcode is a full Claude Code wrapper.
 
+## Providers
+
+rmhcode supports multiple AI coding backends. By default, it uses Claude.
+
+### Available Providers
+
+| Provider | Flag | Requires |
+|----------|------|----------|
+| Claude (default) | `--provider claude` | Included with rmhcode |
+| OpenAI Codex | `--provider codex` | `npm install -g @openai/codex` |
+| Google Gemini | `--provider gemini` | `npm install -g @google/gemini-cli` |
+
+### Usage
+
+```bash
+# Use Claude (default)
+rmhcode
+
+# Use Codex
+rmhcode --provider codex
+
+# Use Gemini
+rmhcode --provider gemini
+```
+
+Each provider uses its own CLI flags. Pass flags after `--provider <name>`:
+
+```bash
+rmhcode --provider gemini -p "explain this code"
+```
+
 ## RMH Builds Integration
 
 Publish and manage projects on the [rmhstudios.com User Builds](https://rmhstudios.com/user-builds) showcase directly from the terminal.
