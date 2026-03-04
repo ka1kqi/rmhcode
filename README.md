@@ -32,6 +32,7 @@ A rebranded [Claude Code](https://github.com/anthropics/claude-code) CLI with a 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ka1kqi/rmhcode/main/install.sh | bash
 ```
+*Note, sometimes may require an uninstall before reinstalling for updates
 
 **Manual:**
 
@@ -90,6 +91,8 @@ Each provider uses its own CLI flags. Pass flags after `--provider <name>`:
 ```bash
 rmhcode --provider gemini -p "explain this code"
 ```
+
+> **Note:** When using the Gemini provider, rmhcode automatically sets `ui.hideBanner` in `~/.gemini/settings.json` so only the rmhcode banner is shown.
 
 ## RMH Builds Integration
 
@@ -181,7 +184,7 @@ On `npm install`, a patch script:
 4. Suppresses the built-in Claude Code header so only the rmhcode banner shows
 5. Configures bundled MCP servers (DeepWiki, GitHub) in `~/.claude.json`
 
-The wrapper CLI (`bin/rmhcode.mjs`) intercepts RMH-specific commands (`login`, `whoami`, `push-build`, `list-builds`, `logout`), displays a gradient banner ( ${\color{#4796E4}blue}$ ${\color{#847ACE}purple}$ ${\color{#C3677F}pink}$ ) on startup, then passes all other arguments through to the patched CLI.
+The wrapper CLI (`bin/rmhcode.mjs`) intercepts RMH-specific commands (`login`, `whoami`, `push-build`, `list-builds`, `logout`), displays a gradient banner ( ${\color{#4796E4}blue}$ ${\color{#847ACE}purple}$ ${\color{#C3677F}pink}$ ) with a "Powered by" indicator on startup, then uses the `--provider` flag to select which backend CLI to spawn (Claude by default, or Codex/Gemini). Provider modules in `src/providers/` handle binary detection, argument translation, and provider-specific setup.
 
 ## Color Palette
 
