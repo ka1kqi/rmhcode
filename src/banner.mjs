@@ -167,7 +167,7 @@ function center(str, width) {
   return ' '.repeat(left) + str + ' '.repeat(diff - left);
 }
 
-export function renderBanner(version = '1.0.0') {
+export function renderBanner(version = '1.0.0', providerDisplayName = 'Claude') {
   const cols = process.stdout.columns || 80;
 
   let art;
@@ -212,6 +212,10 @@ export function renderBanner(version = '1.0.0') {
   const [tr, tg, tb] = getGradientColor(0.65);
   contentLines.push(`${DIM}${fg(tr, tg, tb)}  ${tagline}${RST}`);
 
+  // Powered-by line
+  const [pr, pg, pb] = getGradientColor(0.8);
+  contentLines.push(`${DIM}${fg(pr, pg, pb)}  Powered by ${providerDisplayName}${RST}`);
+
   // Box spans full terminal width, content centered inside
   const boxWidth = cols - 2; // subtract 2 for the │ borders
 
@@ -236,6 +240,6 @@ export function renderBanner(version = '1.0.0') {
   return parts.join('\n');
 }
 
-export function printBanner(version) {
-  process.stdout.write(renderBanner(version));
+export function printBanner(version, providerDisplayName) {
+  process.stdout.write(renderBanner(version, providerDisplayName));
 }
