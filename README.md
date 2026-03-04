@@ -147,7 +147,9 @@ This opens your browser to authorize rmhcode with your RMH account.
 | `rmhcode login` | Authenticate with your RMH account (browser flow or `--token`) |
 | `rmhcode whoami` | Show current authenticated user |
 | `rmhcode push-build` | Publish a project to User Builds (interactive prompts) |
-| `rmhcode list-builds` | List your published builds |
+| `rmhcode push-build --create-repo` | Create a GitHub repo, push code, and publish in one step |
+| `rmhcode edit-build <slug>` | Edit an existing build by its slug |
+| `rmhcode list-builds` | Browse and manage your published builds (interactive menu) |
 | `rmhcode logout` | Sign out and remove stored token |
 
 ### Example: Publishing a build
@@ -173,6 +175,29 @@ $ rmhcode push-build
 ✓ Build "My Cool Project" published!
   View at: https://rmhstudios.com/user-builds/my-cool-project
 ```
+
+### Auto-create GitHub repo
+
+Use `--create-repo` to create a GitHub repository, push your code, and publish — all in one step:
+
+```bash
+$ rmhcode push-build --create-repo
+```
+
+This will:
+1. Create a public GitHub repo named after your current directory
+2. Initialize git (if needed), stage, commit, and push your code
+3. Auto-fill the Repository URL and continue with the publish prompts
+
+Requires `GITHUB_PERSONAL_ACCESS_TOKEN` in your environment with the `repo` scope. Create one at [github.com/settings/tokens](https://github.com/settings/tokens).
+
+### Editing a build
+
+```bash
+$ rmhcode edit-build my-cool-project
+```
+
+Opens interactive prompts to update any field. Press Enter to keep the current value for a field.
 
 Token is stored at `~/.rmhcode/config.json` with owner-only permissions. Tokens expire after 30 days and can be revoked at [rmhstudios.com/rmhcode](https://rmhstudios.com/rmhcode).
 

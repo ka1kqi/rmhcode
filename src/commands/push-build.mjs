@@ -1,7 +1,8 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { requireAuth } from '../lib/config.mjs';
 import { apiRequest, API_BASE } from '../lib/api.mjs';
 import { success, error, info, color } from '../lib/output.mjs';
@@ -12,8 +13,96 @@ async function prompt(rl, question, defaultValue) {
   return answer.trim() || defaultValue || '';
 }
 
+async function createGitHubRepo() {
+  const token = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error(
+      'GITHUB_PERSONAL_ACCESS_TOKEN environment variable is required for --create-repo.\n' +
+      'Create one at https://github.com/settings/tokens with the "repo" scope.'
+    );
+  }
+
+  const repoName = basename(process.cwd());
+  info(`Creating GitHub repository "${repoName}"...`);
+
+  const res = await fetch('https://api.github.com/user/repos', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github+json',
+    },
+    body: JSON.stringify({ name: repoName, private: false }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const details = body.errors?.map(e => e.message).filter(Boolean).join(', ');
+    const msg = details || body.message || `HTTP ${res.status}`;
+    throw new Error(`Failed to create GitHub repo: ${msg}`);
+  }
+
+  const repo = await res.json();
+
+  // Initialize git repo if not already one
+  try {
+    execFileSync('git', ['rev-parse', '--git-dir'], { stdio: 'pipe' });
+  } catch {
+    execFileSync('git', ['init'], { stdio: 'inherit' });
+  }
+
+  const remoteUrl = repo.clone_url;
+  // Authenticated URL for push, then reset to clean URL
+  const authUrl = remoteUrl.replace('https://', `https://${token}@`);
+
+  // Add or update the origin remote (use auth URL for push)
+  try {
+    execFileSync('git', ['remote', 'get-url', 'origin'], { stdio: 'pipe' });
+    execFileSync('git', ['remote', 'set-url', 'origin', authUrl], { stdio: 'pipe' });
+  } catch {
+    execFileSync('git', ['remote', 'add', 'origin', authUrl], { stdio: 'pipe' });
+  }
+
+  // Stage, commit, and push
+  info('Staging files...');
+  execFileSync('git', ['add', '.'], { stdio: 'inherit', timeout: 30000 });
+  try {
+    execFileSync('git', ['commit', '-m', 'Initial commit'], { stdio: 'inherit', timeout: 30000 });
+  } catch {
+    // commit fails if there's nothing new to commit — that's fine
+  }
+  const branch = execFileSync('git', ['branch', '--show-current'], { stdio: 'pipe' })
+    .toString()
+    .trim();
+  info('Pushing to GitHub...');
+  execFileSync('git', ['push', '-u', 'origin', branch], {
+    stdio: 'inherit',
+    timeout: 60000,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+  });
+
+  // Reset remote to clean URL (no token)
+  execFileSync('git', ['remote', 'set-url', 'origin', remoteUrl], { stdio: 'pipe' });
+
+  return repo.html_url;
+}
+
 export async function pushBuild() {
+  const args = process.argv.slice(3);
+  const createRepo = args.includes('--create-repo');
   const config = requireAuth();
+
+  let autoRepoUrl;
+  if (createRepo) {
+    try {
+      autoRepoUrl = await createGitHubRepo();
+      success(`GitHub repo created: ${autoRepoUrl}`);
+    } catch (e) {
+      error(e instanceof Error ? e.message : 'Failed to create GitHub repo');
+      process.exit(1);
+    }
+  }
+
   const rl = createInterface({ input: stdin, output: stdout });
 
   try {
@@ -36,7 +125,13 @@ export async function pushBuild() {
       if (description.length > 500) info('Description must be at most 500 characters');
     }
 
-    const repoUrl = await prompt(rl, 'Repository URL');
+    let repoUrl;
+    if (autoRepoUrl) {
+      repoUrl = autoRepoUrl;
+      info(`Repository URL: ${repoUrl}`);
+    } else {
+      repoUrl = await prompt(rl, 'Repository URL');
+    }
     const demoUrl = await prompt(rl, 'Demo URL');
     const thumbnailUrl = await prompt(rl, 'Thumbnail Image URL');
 
