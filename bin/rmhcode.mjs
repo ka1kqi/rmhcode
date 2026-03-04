@@ -454,6 +454,9 @@ for (let i = 0; i < rawArgs.length; i++) {
   args.push(rawArgs[i]);
 }
 
+// Run provider-specific setup (e.g. hide Gemini banner)
+if (provider.setup) provider.setup();
+
 const binary = provider.findBinary();
 
 if (!binary) {
