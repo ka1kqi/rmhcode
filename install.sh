@@ -68,6 +68,7 @@ do_install() {
   # Clone or update
   if [ -d "$INSTALL_DIR/.git" ]; then
     info "Updating existing installation..."
+    git -C "$INSTALL_DIR" checkout -- . 2>/dev/null || true
     git -C "$INSTALL_DIR" pull --ff-only --quiet
   else
     if [ -d "$INSTALL_DIR" ]; then

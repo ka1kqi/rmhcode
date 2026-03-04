@@ -62,6 +62,7 @@ function Install-Rmhcode {
     # Clone or update
     if (Test-Path "$InstallDir\.git") {
         Write-Green "Updating existing installation..."
+        git -C $InstallDir checkout -- . 2>$null
         git -C $InstallDir pull --ff-only --quiet
     } else {
         if (Test-Path $InstallDir) {
