@@ -97,12 +97,9 @@ if (process.argv.includes('--init')) {
 
 if (process.argv.includes('--tmux')) {
   const { launchTmuxSession } = await import('../src/lib/tmux.mjs');
-  const providerArgs = [];
-  const pIdx = process.argv.indexOf('--provider');
-  if (pIdx !== -1 && process.argv[pIdx + 1]) {
-    providerArgs.push('--provider', process.argv[pIdx + 1]);
-  }
+  const providerArgs = providerIdx !== -1 ? ['--provider', providerName] : [];
   launchTmuxSession(providerArgs);
+  process.exit(0);
 }
 
 function generateClaudeMd() {

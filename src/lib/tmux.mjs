@@ -7,6 +7,7 @@ import { platform } from 'node:os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
+const SESSION = 'rmhcode';
 
 /**
  * Launch a 3-pane tmux session:
@@ -20,43 +21,50 @@ export function launchTmuxSession(providerArgs = []) {
   }
 
   // 2. Ensure tmux is installed
-  if (!isTmuxInstalled()) {
+  if (!whichSync('tmux')) {
     const installed = installTmux();
     if (!installed) process.exit(1);
   }
 
   // 3. Reattach to existing session if one exists
-  const hasSession = spawnSync('tmux', ['has-session', '-t', 'rmhcode'], { stdio: 'ignore' });
+  const hasSession = spawnSync('tmux', ['has-session', '-t', SESSION], { stdio: 'ignore' });
   if (hasSession.status === 0) {
     console.log('\x1b[36mReattaching to existing rmhcode tmux session...\x1b[0m');
-    spawnSync('tmux', ['attach-session', '-t', 'rmhcode'], { stdio: 'inherit' });
+    spawnSync('tmux', ['attach-session', '-t', SESSION], { stdio: 'inherit' });
     process.exit(0);
   }
 
   // 4. Resolve the rmhcode command
   const rmhCmd = resolveRmhCommand(providerArgs);
-  const rmhCmdStr = rmhCmd.map(a => a.includes(' ') ? `"${a}"` : a).join(' ');
+  const rmhCmdStr = rmhCmd.map(shellQuote).join(' ');
 
   // 5. Create the 3-pane layout with empty shells first, then send commands.
   //    This ensures the layout is finalized before rmhcode renders its banner.
   //    Pane 0: left  (rmhcode)
   //    Pane 1: right (rmhcode) — split horizontally from pane 0
   //    Pane 2: bottom-right (shell) — split vertically from pane 1
-  spawnSync('tmux', ['new-session', '-d', '-s', 'rmhcode'], { stdio: 'ignore' });
-  spawnSync('tmux', ['split-window', '-h', '-t', 'rmhcode:0'], { stdio: 'ignore' });
-  spawnSync('tmux', ['split-window', '-v', '-t', 'rmhcode:0.1'], { stdio: 'ignore' });
-  spawnSync('tmux', ['select-layout', '-t', 'rmhcode:0', 'main-vertical'], { stdio: 'ignore' });
-  spawnSync('tmux', ['select-pane', '-t', 'rmhcode:0.0'], { stdio: 'ignore' });
+  spawnSync('tmux', ['new-session', '-d', '-s', SESSION], { stdio: 'ignore' });
+  spawnSync('tmux', ['split-window', '-h', '-t', `${SESSION}:0`], { stdio: 'ignore' });
+  spawnSync('tmux', ['split-window', '-v', '-t', `${SESSION}:0.1`], { stdio: 'ignore' });
+  spawnSync('tmux', ['select-layout', '-t', `${SESSION}:0`, 'main-vertical'], { stdio: 'ignore' });
+  spawnSync('tmux', ['select-pane', '-t', `${SESSION}:0.0`], { stdio: 'ignore' });
 
   // Now that panes are sized correctly, launch rmhcode in panes 0 and 1
-  spawnSync('tmux', ['send-keys', '-t', 'rmhcode:0.0', rmhCmdStr, 'Enter'], { stdio: 'ignore' });
-  spawnSync('tmux', ['send-keys', '-t', 'rmhcode:0.1', rmhCmdStr, 'Enter'], { stdio: 'ignore' });
+  spawnSync('tmux', ['send-keys', '-t', `${SESSION}:0.0`, rmhCmdStr, 'Enter'], { stdio: 'ignore' });
+  spawnSync('tmux', ['send-keys', '-t', `${SESSION}:0.1`, rmhCmdStr, 'Enter'], { stdio: 'ignore' });
 
   // 6. Attach
-  spawnSync('tmux', ['attach-session', '-t', 'rmhcode'], { stdio: 'inherit' });
+  spawnSync('tmux', ['attach-session', '-t', SESSION], { stdio: 'inherit' });
 
   // 7. Exit
   process.exit(0);
+}
+
+function shellQuote(arg) {
+  // If the arg is clean (only safe chars), return as-is
+  if (/^[a-zA-Z0-9_./:=@-]+$/.test(arg)) return arg;
+  // Otherwise single-quote, escaping any internal single quotes
+  return "'" + arg.replace(/'/g, "'\\''") + "'";
 }
 
 function whichSync(cmd) {
@@ -65,10 +73,6 @@ function whichSync(cmd) {
   } catch {
     return null;
   }
-}
-
-function isTmuxInstalled() {
-  return whichSync('tmux') !== null;
 }
 
 function installTmux() {
